@@ -35,6 +35,7 @@ function ActionResult({ ok, err }: { ok: string; err: string }) {
 export default function AdminDashboard() {
   const account  = useCurrentAccount();
   const client   = useSuiClient();
+  // Treasury 是單一共享物件，直接打鏈最準確
   const { data: treasury, isLoading: tLoading, refetch: refetchTreasury } = useTreasury();
   const { adminResolve, isPending: resolving } = useAdminResolve();
   const { replenishSui, replenishUsdc, isPending: replenishing } = useReplenish();

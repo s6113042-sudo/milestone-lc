@@ -106,7 +106,7 @@ export default function AdminDashboard() {
             <HealthBar value={suiHealth} label="備付率（Buffer / Pending）" />
             <div className="info-grid">
               <div className="info-item"><span className="info-label">可用緩衝</span><span className="info-value">{formatSui(treasury.sui_buffer)}</span></div>
-              <div className="info-item"><span className="info-label">haSUI 持倉</span><span className="info-value">{treasury.hasui_held} haSUI</span></div>
+              <div className="info-item"><span className="info-label">haSUI 持倉</span><span className="info-value">{(Number(treasury.hasui_held) / 1e9).toFixed(4)} haSUI</span></div>
               <div className="info-item"><span className="info-label">待贖回</span><span className="info-value">{formatSui(treasury.pending_sui)}</span></div>
               <div className="info-item"><span className="info-label">協議手續費</span><span className="info-value">{formatSui(treasury.protocol_fee_sui)}</span></div>
             </div>
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
             <HealthBar value={usdcHealth} label="備付率（Buffer / Pending）" />
             <div className="info-grid">
               <div className="info-item"><span className="info-label">可用緩衝</span><span className="info-value">{formatUsdc(treasury.usdc_buffer)}</span></div>
-              <div className="info-item"><span className="info-label">sCoin 持倉</span><span className="info-value">{treasury.scoin_held} sCoin</span></div>
+              <div className="info-item"><span className="info-label">sCoin 持倉</span><span className="info-value">{(Number(treasury.scoin_held) / 1e6).toFixed(2)} sCoin</span></div>
               <div className="info-item"><span className="info-label">待贖回</span><span className="info-value">{formatUsdc(treasury.pending_usdc)}</span></div>
               <div className="info-item"><span className="info-label">協議手續費</span><span className="info-value">{formatUsdc(treasury.protocol_fee_usdc)}</span></div>
             </div>

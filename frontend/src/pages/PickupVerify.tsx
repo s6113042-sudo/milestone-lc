@@ -42,12 +42,18 @@ export default function PickupVerify() {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
-    if (!nftId.trim() || !lcId.trim()) {
+    const nft = nftId.trim();
+    const lc  = lcId.trim();
+    if (!nft || !lc) {
       setLocalError('請填入 NFT ID 和 L/C ID');
       return;
     }
+    if (nft === lc) {
+      setLocalError('NFT ID 和 L/C ID 不能相同，兩者是不同的鏈上物件');
+      return;
+    }
     try {
-      await completePickup(lcId.trim(), nftId.trim());
+      await completePickup(lc, nft);
       setSuccess('驗貨完成！L/C 狀態已更新為「已完成」。');
     } catch (e) {
       setLocalError(String(e));
@@ -68,8 +74,9 @@ export default function PickupVerify() {
       </div>
 
       {success    && <div className="alert alert-success">{success}</div>}
-      {localError && <div className="alert alert-error">{localError}</div>}
-      {error      && <div className="alert alert-error">{String(error)}</div>}
+      {(localError || error) && (
+        <div className="alert alert-error">{localError || String(error)}</div>
+      )}
 
       <div className="card">
         <form onSubmit={handleVerify} className="form">
@@ -130,11 +137,20 @@ export default function PickupVerify() {
 
           {/* L/C 鏈上狀態 */}
           {lc && (
-            <div className="form-info">
+            <div className="form-info" style={lc.status !== 2 ? {
+              background: 'var(--danger-light)', border: '1px solid var(--danger)',
+            } : {}}>
               <div className="info-row">
                 <span>L/C 狀態：</span>
                 <StatusBadge status={lc.status} />
               </div>
+              {lc.status !== 2 && (
+                <div className="info-row">
+                  <span style={{ color: 'var(--danger)', fontSize: 13 }}>
+                    ⚠ L/C 必須是「已出貨」狀態才能完成驗貨（目前狀態不符）
+                  </span>
+                </div>
+              )}
               <div className="info-row">
                 <span>買方：</span>
                 <span className="mono">{lc.buyer.slice(0, 16)}…</span>
@@ -148,7 +164,11 @@ export default function PickupVerify() {
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isPending || (nftInfo?.used ?? false)}>
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            disabled={isPending || (nftInfo?.used ?? false) || (lc !== undefined && lc !== null && lc.status !== 2)}
+          >
             {isPending ? '驗證中...' : '完成驗貨'}
           </button>
         </form>

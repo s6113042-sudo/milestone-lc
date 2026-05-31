@@ -5,18 +5,41 @@ import { useCreateLc } from '../../hooks/useCreateLc';
 import { CURRENCY_SUI, CURRENCY_USDC, MIST_PER_SUI } from '../../constants';
 import { api } from '../../lib/api';
 
+const MAX_HOURS = 365 * 24; // 8760
+
+function toHours(days: string, hours: string) {
+  return Number(days) * 24 + Number(hours);
+}
+
+function durationLabel(days: string, hours: string) {
+  const d = Number(days);
+  const h = Number(hours);
+  if (d > 0 && h > 0) return `${d} 天 ${h} 小時`;
+  if (d > 0) return `${d} 天`;
+  return `${h} 小時`;
+}
+
+function deadlineDate(baseMs: number, offsetHours: number) {
+  return new Date(baseMs + offsetHours * 3_600_000).toLocaleString('zh-TW', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 export default function CreateLc() {
   const account  = useCurrentAccount();
   const navigate = useNavigate();
   const { createLc, isPending, error } = useCreateLc();
 
-  const [seller,    setSeller]    = useState('');
-  const [amount,    setAmount]    = useState('');
-  const [currency,  setCurrency]  = useState<number>(CURRENCY_SUI);
-  const [termsText, setTermsText] = useState('');
-  const [shipDays,  setShipDays]  = useState('14');
-  const [pickupDays,setPickupDays]= useState('7');
-  const [success,   setSuccess]   = useState('');
+  const [seller,      setSeller]      = useState('');
+  const [amount,      setAmount]      = useState('');
+  const [currency,    setCurrency]    = useState<number>(CURRENCY_SUI);
+  const [termsText,   setTermsText]   = useState('');
+  const [shipDays,    setShipDays]    = useState('14');
+  const [shipHours,   setShipHours]   = useState('0');
+  const [pickupDays,  setPickupDays]  = useState('7');
+  const [pickupHours, setPickupHours] = useState('0');
+  const [success,     setSuccess]     = useState('');
 
   const [apy, setApy] = useState<{ sui: number; usdc: number } | null>(null);
   const [hashLoading, setHashLoading] = useState(false);
@@ -29,11 +52,16 @@ export default function CreateLc() {
     ? (currency === CURRENCY_SUI ? apy.sui : apy.usdc)
     : null;
 
+  const shipTotalHours   = toHours(shipDays, shipHours);
+  const pickupTotalHours = toHours(pickupDays, pickupHours);
+  const shipError   = shipTotalHours < 1 ? '最少 1 小時' : shipTotalHours > MAX_HOURS ? '最多 365 天' : '';
+  const pickupError = pickupTotalHours < 1 ? '最少 1 小時' : pickupTotalHours > MAX_HOURS ? '最多 365 天' : '';
+  const now = Date.now();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!account) return;
+    if (!account || shipError || pickupError) return;
 
-    // 取得 terms_hash：若後端可用則用後端 SHA-256，否則 fallback 到前端截斷
     let termsHash: number[];
     try {
       setHashLoading(true);
@@ -48,9 +76,8 @@ export default function CreateLc() {
       setHashLoading(false);
     }
 
-    const now = Date.now();
-    const shipDeadlineMs   = BigInt(now + Number(shipDays) * 86400_000);
-    const pickupDeadlineMs = BigInt(now + (Number(shipDays) + Number(pickupDays)) * 86400_000);
+    const shipDeadlineMs   = BigInt(now + shipTotalHours * 3_600_000);
+    const pickupDeadlineMs = BigInt(now + (shipTotalHours + pickupTotalHours) * 3_600_000);
     const amountMist = currency === CURRENCY_SUI
       ? BigInt(Math.round(parseFloat(amount) * Number(MIST_PER_SUI)))
       : BigInt(Math.round(parseFloat(amount) * 1_000_000));
@@ -105,15 +132,46 @@ export default function CreateLc() {
             )}
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">出貨期限（天）</label>
-              <input className="form-input" type="number" min="1" value={shipDays} onChange={e => setShipDays(e.target.value)} required />
+          {/* 出貨期限 */}
+          <div className="form-group">
+            <label className="form-label">出貨期限（最少 1 小時，最多 365 天）</label>
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div style={{ flex: 1 }}>
+                <input className="form-input" type="number" min="0" max="365" placeholder="天" value={shipDays}
+                  onChange={e => setShipDays(e.target.value)} />
+                <span className="form-hint" style={{ marginTop: 2 }}>天</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <input className="form-input" type="number" min="0" max="23" placeholder="小時" value={shipHours}
+                  onChange={e => setShipHours(e.target.value)} />
+                <span className="form-hint" style={{ marginTop: 2 }}>小時</span>
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">提貨期限（天，出貨後起算）</label>
-              <input className="form-input" type="number" min="1" value={pickupDays} onChange={e => setPickupDays(e.target.value)} required />
+            {shipError
+              ? <span style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{shipError}</span>
+              : <span style={{ fontSize: 12, color: 'var(--text)', marginTop: 4 }}>共 {durationLabel(shipDays, shipHours)}，截止：{deadlineDate(now, shipTotalHours)}</span>
+            }
+          </div>
+
+          {/* 提貨期限 */}
+          <div className="form-group">
+            <label className="form-label">提貨期限（出貨後起算，最少 1 小時，最多 365 天）</label>
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div style={{ flex: 1 }}>
+                <input className="form-input" type="number" min="0" max="365" placeholder="天" value={pickupDays}
+                  onChange={e => setPickupDays(e.target.value)} />
+                <span className="form-hint" style={{ marginTop: 2 }}>天</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <input className="form-input" type="number" min="0" max="23" placeholder="小時" value={pickupHours}
+                  onChange={e => setPickupHours(e.target.value)} />
+                <span className="form-hint" style={{ marginTop: 2 }}>小時</span>
+              </div>
             </div>
+            {pickupError
+              ? <span style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{pickupError}</span>
+              : <span style={{ fontSize: 12, color: 'var(--text)', marginTop: 4 }}>共 {durationLabel(pickupDays, pickupHours)}，最晚提貨：{deadlineDate(now, shipTotalHours + pickupTotalHours)}</span>
+            }
           </div>
 
           <div className="form-group">
@@ -123,12 +181,13 @@ export default function CreateLc() {
           </div>
 
           <div className="form-info">
-            <div className="info-row"><span>出貨截止：</span><span>{new Date(Date.now() + Number(shipDays) * 86400_000).toLocaleDateString('zh-TW')}</span></div>
-            <div className="info-row"><span>提貨截止：</span><span>{new Date(Date.now() + (Number(shipDays) + Number(pickupDays)) * 86400_000).toLocaleDateString('zh-TW')}</span></div>
+            <div className="info-row"><span>出貨截止：</span><span>{deadlineDate(now, shipTotalHours)}</span></div>
+            <div className="info-row"><span>提貨截止：</span><span>{deadlineDate(now, shipTotalHours + pickupTotalHours)}</span></div>
             <div className="info-row"><span>收益分配：</span><span>買方 70% / 協議 30%</span></div>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={isPending || hashLoading}>
+          <button type="submit" className="btn btn-primary btn-full"
+            disabled={isPending || hashLoading || !!shipError || !!pickupError}>
             {hashLoading ? '計算條款 hash...' : isPending ? '提交中...' : '建立信用狀'}
           </button>
         </form>

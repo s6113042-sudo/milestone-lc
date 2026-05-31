@@ -8,6 +8,7 @@ import ConfirmShipment from './pages/seller/ConfirmShipment';
 import Payments from './pages/seller/Payments';
 import PickupVerify from './pages/PickupVerify';
 import AdminDashboard from './pages/admin/Dashboard';
+import History from './pages/History';
 import './App.css';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/seller/payments" element={<Payments />} />
           <Route path="/pickup" element={<PickupVerify />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/history" element={<History />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -199,6 +199,7 @@ export default function LcList() {
   const account = useCurrentAccount();
   const navigate = useNavigate();
   const { data: lcs, isLoading, refetch } = useLcListByBuyer(account?.address);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   if (!account) return <div className="page-container"><div className="empty-state">請先連接錢包</div></div>;
 
@@ -234,11 +235,26 @@ export default function LcList() {
       )}
 
       {archived.length > 0 && (
-        <section style={{ marginTop: 32 }}>
-          <h3 className="section-title">歷史記錄（{archived.length}）</h3>
-          <div className="lc-grid">
-            {archived.map(lc => <LcCard key={lc.id} lc={lc} onRefetch={() => refetch()} />)}
-          </div>
+        <section style={{ marginTop: active.length > 0 ? 32 : 0 }}>
+          <button
+            onClick={() => setArchiveOpen(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+              textAlign: 'left',
+            }}
+          >
+            <h3 className="section-title" style={{ margin: 0 }}>已結束（{archived.length}）</h3>
+            <span style={{
+              fontSize: 12, color: 'var(--text)', transition: 'transform .2s',
+              display: 'inline-block', transform: archiveOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}>▼</span>
+          </button>
+          {archiveOpen && (
+            <div className="lc-grid" style={{ marginTop: 12 }}>
+              {archived.map(lc => <LcCard key={lc.id} lc={lc} onRefetch={() => refetch()} />)}
+            </div>
+          )}
         </section>
       )}
     </div>

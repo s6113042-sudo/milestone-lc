@@ -15,12 +15,17 @@ let keeperTimer: ReturnType<typeof setTimeout> | null = null;
 // ── 取得 keypair（從環境變數）────────────────────────────────────────────────
 
 function getKeypair(): Ed25519Keypair | null {
-  const mnemonic = process.env.ADMIN_MNEMONIC;
+  const mnemonic = process.env.ADMIN_MNEMONIC?.trim();
   if (!mnemonic) {
     console.warn('[keeper] ADMIN_MNEMONIC 未設定，跳過 replenish');
     return null;
   }
-  return Ed25519Keypair.deriveKeypair(mnemonic);
+  try {
+    return Ed25519Keypair.deriveKeypair(mnemonic);
+  } catch {
+    console.warn('[keeper] ADMIN_MNEMONIC 無效（非 BIP39 助記詞），keeper 停用');
+    return null;
+  }
 }
 
 // ── 簽名並執行交易 ────────────────────────────────────────────────────────────

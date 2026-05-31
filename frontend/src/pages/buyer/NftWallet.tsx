@@ -8,16 +8,11 @@ import type { PickupNFT } from '../../types';
 function NftCard({ nft, onUsed }: { nft: PickupNFT; onUsed: () => void }) {
   const { completePickup, isPending } = useCompletePickup();
   const [showQr, setShowQr] = useState(false);
-  const [lcId, setLcId] = useState('');
   const [error, setError] = useState('');
 
   const handleComplete = async () => {
-    if (!lcId.trim()) {
-      setError('請輸入 L/C ID');
-      return;
-    }
     try {
-      await completePickup(lcId.trim(), nft.id);
+      await completePickup(nft.lc_id, nft.id);
       onUsed();
     } catch (e) {
       setError(String(e));
@@ -67,21 +62,16 @@ function NftCard({ nft, onUsed }: { nft: PickupNFT; onUsed: () => void }) {
             </div>
           )}
 
-          <div className="form-group" style={{ marginTop: 12 }}>
-            <label className="form-label">完成提貨（輸入 L/C ID）</label>
-            <input
-              className="form-input"
-              placeholder="0x..."
-              value={lcId}
-              onChange={e => setLcId(e.target.value)}
-            />
+          <div className="info-item" style={{ marginTop: 12 }}>
+            <span className="info-label">關聯 L/C</span>
+            <span className="info-value mono">{nft.lc_id.slice(0, 14)}…</span>
           </div>
-          {error && <div className="alert alert-error" style={{ marginTop: 6 }}>{error}</div>}
+          {error && <div className="alert alert-error" style={{ marginTop: 8 }}>{error}</div>}
           <button
             className="btn btn-primary btn-sm"
             onClick={handleComplete}
             disabled={isPending}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 12 }}
           >
             {isPending ? '確認中...' : '確認提貨完成'}
           </button>

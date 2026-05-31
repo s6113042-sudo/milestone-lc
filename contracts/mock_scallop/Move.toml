@@ -1,0 +1,12 @@
+[package]
+name = "mock_scallop"
+edition = "2024.beta"
+
+[dependencies]
+
+[addresses]
+mock_scallop = "0x0"
+
+[environments.devnet]
+chain-id = "4f0ae125"
+published-at = "0x0328f722b5f2769a8337b545b71b267f4bc2a70b4f5a2e2990c8c0d9b12c980a"

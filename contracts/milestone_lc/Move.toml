@@ -1,0 +1,14 @@
+[package]
+name = "milestone_lc"
+edition = "2024"
+
+[dependencies]
+mock_haedal  = { local = "../mock_haedal" }
+mock_scallop = { local = "../mock_scallop" }
+test_coins   = { local = "../test_coins" }
+
+[addresses]
+milestone_lc = "0x0"
+
+[environments.devnet]
+chain-id = "4f0ae125"

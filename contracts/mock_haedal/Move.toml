@@ -1,0 +1,12 @@
+[package]
+name = "mock_haedal"
+edition = "2024.beta"
+
+[dependencies]
+
+[addresses]
+mock_haedal = "0x0"
+
+[environments.devnet]
+chain-id = "4f0ae125"
+published-at = "0x61ea941e2a99173d8db601029b8efa4fb4430e26430a80bc6288dce78042aef3"

@@ -1,0 +1,29 @@
+# 私有記錄 — 含錢包助記詞與部署 ID，絕不上傳
+*.local.md
+*.local.toml
+SECRETS*
+
+# Sui 暫存發布記錄
+Pub.devnet.toml
+Pub.testnet.toml
+Pub.mainnet.toml
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# Move build artifacts
+build/
+contracts/*/build/
+
+# Frontend build
+frontend/dist/
+
+# Claude memory (local only)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

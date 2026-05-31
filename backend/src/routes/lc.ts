@@ -5,32 +5,36 @@ import { lcStore, getLcsByAddress, getLcsByBuyer, getLcsBySeller, parseLcObject 
 
 const router = Router();
 
-// GET /api/lc/:address — 查詢某地址的所有 L/C（買方＋賣方）
+const SUI_ADDR_RE = /^0x[0-9a-fA-F]{1,64}$/;
+const isAddr = (v: string) => SUI_ADDR_RE.test(v);
+
+// GET /api/lc/:address — 查詢某地址的所有 L/C
 router.get('/:address', async (req: Request, res: Response) => {
   const address = String(req.params.address);
-  const role = (req.query.role as string | undefined);
+  if (!isAddr(address)) return res.status(400).json({ error: '無效的 Sui 地址格式' });
+
+  const role = req.query.role as string | undefined;
+  const allowed = ['buyer', 'seller', undefined];
+  if (!allowed.includes(role)) return res.status(400).json({ error: 'role 必須為 buyer 或 seller' });
 
   let results;
-  if (role === 'buyer')  results = getLcsByBuyer(address);
+  if (role === 'buyer')       results = getLcsByBuyer(address);
   else if (role === 'seller') results = getLcsBySeller(address);
-  else results = getLcsByAddress(address);
+  else                        results = getLcsByAddress(address);
 
-  res.json({ data: results, total: results.length });
+  return res.json({ data: results, total: results.length });
 });
 
-// GET /api/lc/detail/:lcId — 單筆 L/C 詳情（優先查 store，否則打鏈）
+// GET /api/lc/detail/:lcId — 單筆 L/C 詳情
 router.get('/detail/:lcId', async (req: Request, res: Response) => {
   const lcId = String(req.params.lcId);
+  if (!isAddr(lcId)) return res.status(400).json({ error: '無效的 Object ID 格式' });
 
-  // 先查快取
-  if (lcStore.has(lcId)) {
-    return res.json({ data: lcStore.get(lcId), source: 'cache' });
-  }
+  if (lcStore.has(lcId)) return res.json({ data: lcStore.get(lcId), source: 'cache' });
 
-  // 快取 miss → 打鏈
   try {
     const obj = await suiClient.getObject({ id: lcId, options: { showContent: true } });
-    const lc = parseLcObject(obj);
+    const lc  = parseLcObject(obj);
     if (!lc) return res.status(404).json({ error: 'L/C 不存在或尚未索引' });
     lcStore.set(lc.id, lc);
     return res.json({ data: lc, source: 'chain' });
@@ -39,19 +43,14 @@ router.get('/detail/:lcId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/lc/metadata — 接受交易條款文字，返回 SHA-256 hash（作為 terms_hash）
+// POST /api/lc/metadata — 接受交易條款文字，返回 SHA-256 hash
 router.post('/metadata', (req: Request, res: Response) => {
-  const { terms } = req.body as { terms?: string };
-  if (!terms || typeof terms !== 'string') {
-    return res.status(400).json({ error: '缺少 terms 欄位' });
-  }
+  const { terms } = req.body as { terms?: unknown };
+  if (!terms || typeof terms !== 'string') return res.status(400).json({ error: '缺少 terms 字串欄位' });
+  if (terms.length > 100_000)             return res.status(400).json({ error: 'terms 超過 100 KB 上限' });
 
-  const hash = createHash('sha256').update(terms, 'utf8').digest();
-  // 回傳 hex 字串與 byte array（前端用 byte array 傳給合約）
-  const hex = hash.toString('hex');
-  const bytes = Array.from(hash);
-
-  return res.json({ hex, bytes });
+  const hash  = createHash('sha256').update(terms, 'utf8').digest();
+  return res.json({ hex: hash.toString('hex'), bytes: Array.from(hash) });
 });
 
 export default router;

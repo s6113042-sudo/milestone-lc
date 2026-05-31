@@ -6,6 +6,7 @@ import { getJsonRpcFullnodeUrl } from '@mysten/sui/jsonRpc';
 import '@mysten/dapp-kit/dist/index.css';
 import './index.css';
 import App from './App.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 
 const { networkConfig } = createNetworkConfig({
   devnet: { url: getJsonRpcFullnodeUrl('devnet'), network: 'devnet' },
@@ -22,7 +23,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
         <WalletProvider autoConnect>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>
